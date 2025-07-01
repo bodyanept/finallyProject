@@ -52,10 +52,10 @@
 
 ## 5. Технические требования  
 - **Frontend:** HTML5, CSS3, JavaScript (React/Vue)  
-- **Backend:** PHP (Laravel) / Python (Django) / Node.js  
+- **Backend:** Python (Django)
 - **БД:** MySQL/PostgreSQL  
-- **Хостинг:** AWS/Google Cloud  
-- **Интеграции:** LiqPay/Stripe, Nova Poshta API  
+- **Хостинг:** Firstbyte
+- **Интеграции:** ?
 
 ## 6. Дизайн и UX  
 - Минималистичный современный дизайн  
@@ -69,6 +69,4 @@
 4. Тестирование  
 5. Запуск и поддержка  
 
-## 8. Бюджет и сроки  
-- **Сроки:** 4-6 месяцев  
-- **Бюджет:** от $10 000  
+

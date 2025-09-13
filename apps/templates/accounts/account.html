@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Личный кабинет — ZapChasti{% endblock %}
+{% block content %}
+  <div class="flex items-baseline justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Личный кабинет</h1>
+    <div class="text-sm text-slate-600">{{ request.user.email }}</div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <section class="md:col-span-2 space-y-4">
+      <div class="rounded-xl border bg-white p-4">
+        <h2 class="font-medium mb-3">Профиль</h2>
+        <form method="post" action="/account/" class="space-y-3">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Имя</label>
+            {{ form.name }}
+          </div>
+          <div class="text-sm text-slate-500">Email (логин): {{ request.user.email }}</div>
+          <input type="hidden" name="profile_submit" value="1" />
+          <div>
+            <button class="px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Сохранить</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="rounded-xl border bg-white p-4">
+        <h2 class="font-medium mb-3">Адрес</h2>
+        <form method="post" action="/account/" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {% csrf_token %}
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-600 mb-1">Адрес</label>
+            {{ address_form.line1 }}
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Кв/офис</label>
+            {{ address_form.line2 }}
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Город</label>
+            {{ address_form.city }}
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Регион</label>
+            {{ address_form.region }}
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Индекс</label>
+            {{ address_form.postal_code }}
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Телефон</label>
+            {{ address_form.phone }}
+          </div>
+          <input type="hidden" name="address_submit" value="1" />
+          <div class="md:col-span-2">
+            <button class="px-4 py-2 rounded-md bg-slate-200 hover:bg-slate-300">Сохранить адрес</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="rounded-xl border bg-white p-4">
+        <h2 class="font-medium mb-3">Гараж</h2>
+        <form method="post" action="/account/garage/add/" class="grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
+          {% csrf_token %}
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-600 mb-1">Марка</label>
+            {{ garage_form.make }}
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-600 mb-1">Модель</label>
+            {{ garage_form.model }}
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Год</label>
+            {{ garage_form.year }}
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-600 mb-1">VIN</label>
+            {{ garage_form.vin }}
+          </div>
+          <div>
+            <button class="w-full px-4 py-2 rounded-md bg-slate-200 hover:bg-slate-300">Добавить</button>
+          </div>
+        </form>
+
+        <div class="mt-4 divide-y">
+          {% for v in garage %}
+            <div class="py-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium">{{ v.make }} {{ v.model }}{% if v.year %} {{ v.year }}{% endif %}</div>
+                {% if v.vin %}<div class="text-xs text-slate-500">VIN: {{ v.vin }}</div>{% endif %}
+              </div>
+              <form method="post" action="/account/garage/{{ v.id }}/delete/">
+                {% csrf_token %}
+                <button class="px-3 py-1.5 rounded-md bg-rose-500 text-white hover:bg-rose-600">Удалить</button>
+              </form>
+            </div>
+          {% empty %}
+            <div class="py-4 text-slate-600">Гараж пуст. Добавьте автомобиль.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <aside class="space-y-3">
+      <div class="rounded-xl border bg-white p-4">
+        <div class="text-slate-600">Баланс</div>
+        <div class="text-2xl font-bold mt-1">{{ request.user.balance }} ₽</div>
+        <div class="text-xs text-slate-500 mt-1">Пополнение/списание имитируется в проекте</div>
+        <form method="post" action="/account/" class="mt-3 grid grid-cols-3 gap-2 items-center">
+          {% csrf_token %}
+          {{ topup_form.amount }}
+          <input type="hidden" name="topup_submit" value="1" />
+          <button class="col-span-1 px-3 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Пополнить</button>
+        </form>
+      </div>
+      <div class="rounded-xl border bg-white p-4">
+        <div class="font-medium mb-2">Недавние заказы</div>
+        <div class="text-sm text-slate-500">Раздел будет расширен (ссылки на заказы).</div>
+      </div>
+    </aside>
+  </div>
+{% endblock %}

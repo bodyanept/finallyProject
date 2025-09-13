@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Каталог — ZapChasti{% endblock %}
+{% block content %}
+  <div class="flex items-baseline justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Каталог</h1>
+    <div class="text-sm text-slate-600">Найдено: {{ products|length }}</div>
+  </div>
+
+  <div class="mb-6 flex flex-wrap gap-2">
+    <a href="/catalog/" class="px-3 py-1.5 rounded-full text-sm bg-slate-200 hover:bg-slate-300">Все</a>
+    {% for c in categories %}
+      <a href="/catalog/?category={{ c.slug }}" class="px-3 py-1.5 rounded-full text-sm bg-slate-200 hover:bg-slate-300">{{ c.name }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    {% for p in products %}
+      <div class="group rounded-xl overflow-hidden border bg-white hover:shadow md:hover:-translate-y-0.5 transition">
+        <a href="/parts/{{ p.slug }}/" class="block aspect-[4/3] bg-slate-100 relative">
+          {% if p.images and p.images.0 %}
+            <img src="{{ p.images.0 }}" alt="{{ p.name }}" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
+          {% else %}
+            <div class="absolute inset-0 flex items-center justify-center text-slate-400">нет фото</div>
+          {% endif %}
+          {% if p.in_stock > 0 %}
+          <span class="absolute top-2 left-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">в наличии</span>
+          {% else %}
+          <span class="absolute top-2 left-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">нет в наличии</span>
+          {% endif %}
+        </a>
+        <div class="p-3">
+          <a href="/parts/{{ p.slug }}/" class="block text-sm font-medium line-clamp-2 leading-5 hover:underline">{{ p.name }}</a>
+          <div class="mt-2 flex items-center justify-between">
+            <div class="text-lg font-semibold text-brand-600">{{ p.price }} ₽</div>
+            <button
+              type="button"
+              hx-post="/api/cart/items/"
+              hx-vals='{"product": {{ p.id }}, "quantity": 1}'
+              hx-trigger="click"
+              hx-on:htmx:afterRequest="refreshCartBadge()"
+              hx-swap="none"
+              class="text-sm px-3 py-1.5 rounded-md bg-brand-600 text-white hover:bg-brand-700"
+            >В корзину</button>
+          </div>
+          <div class="mt-1 text-[11px] text-slate-500">Артикул: {{ p.sku }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Оформление заказа — ZapChasti{% endblock %}
+{% block content %}
+  <h1 class="text-2xl font-semibold mb-6">Оформление заказа</h1>
+
+  {% if need_login %}
+    <div class="rounded-xl border bg-white p-6">
+      <p class="text-slate-700">{{ message }}</p>
+      <a href="/admin/login/?next=/checkout/" class="inline-block mt-3 px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Войти</a>
+    </div>
+  {% elif order %}
+    <div class="rounded-xl border bg-white p-6">
+      <div class="text-slate-600">Заказ создан</div>
+      <div class="mt-1 text-xl font-semibold">№ {{ order.id }} — {{ order.total }} ₽</div>
+      <div class="mt-2">Статус оплаты: <span class="font-medium">{{ result }}</span></div>
+      {% if result == 'processing' %}
+        <div class="mt-2 text-sm text-slate-600">Платёж в обработке. Можно завершить через webhook API.</div>
+      {% endif %}
+      <div class="mt-4">
+        <a href="/account/" class="px-4 py-2 rounded-md bg-slate-200 hover:bg-slate-300">В личный кабинет</a>
+        <a href="/catalog/" class="ml-2 text-sm text-brand-600 hover:underline">Вернуться в каталог</a>
+      </div>
+    </div>
+    {% if need_topup %}
+      <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div class="w-full max-w-md rounded-xl border bg-white p-6 shadow-xl">
+          <div class="text-lg font-semibold">Недостаточно средств</div>
+          <div class="mt-2 text-sm text-slate-700">Для оплаты не хватает
+            <span class="font-semibold">{{ topup_deficit }} ₽</span>. Пополните баланс и попробуйте снова.</div>
+          <form method="post" action="/account/" class="mt-4 grid grid-cols-3 gap-2 items-center">
+            {% csrf_token %}
+            <input type="hidden" name="topup_submit" value="1" />
+            <input type="hidden" name="next" value="/checkout/" />
+            <input type="number" name="amount" min="0.01" step="0.01"
+                   value="{{ topup_deficit }}" class="col-span-2 w-full rounded-md border px-3 py-2" />
+            <button class="px-3 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Пополнить</button>
+          </form>
+          <div class="mt-3 text-right">
+            <a href="/account/" class="text-sm text-slate-600 hover:underline">Перейти в кабинет</a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <section class="md:col-span-2 space-y-4">
+        <div class="rounded-xl border bg-white p-4">
+          <h2 class="font-medium mb-3">Адрес доставки</h2>
+          {% if address %}
+            {% if address.line1 or address.city or address.phone %}
+              <div class="text-sm text-slate-700">
+                {% if address.city %}<div><span class="text-slate-500">Город:</span> {{ address.city }}</div>{% endif %}
+                {% if address.line1 %}<div><span class="text-slate-500">Адрес:</span> {{ address.line1 }}</div>{% endif %}
+                {% if address.line2 %}<div><span class="text-slate-500">Кв/офис:</span> {{ address.line2 }}</div>{% endif %}
+                {% if address.region %}<div><span class="text-slate-500">Регион:</span> {{ address.region }}</div>{% endif %}
+                {% if address.postal_code %}<div><span class="text-slate-500">Индекс:</span> {{ address.postal_code }}</div>{% endif %}
+                {% if address.phone %}<div><span class="text-slate-500">Телефон:</span> {{ address.phone }}</div>{% endif %}
+              </div>
+              <div class="mt-3 text-sm">
+                <a href="/account/#address" class="text-brand-600 hover:underline">Изменить адрес</a>
+              </div>
+            {% else %}
+              <div class="text-slate-600">Адрес не указан. Укажите адрес в <a class="text-brand-600 hover:underline" href="/account/">личном кабинете</a>.</div>
+            {% endif %}
+          {% else %}
+            <div class="text-slate-600">Адрес не указан. Укажите адрес в <a class="text-brand-600 hover:underline" href="/account/">личном кабинете</a>.</div>
+          {% endif %}
+        </div>
+
+        <div class="rounded-xl border bg-white p-4">
+          <h2 class="font-medium mb-3">Содержимое корзины</h2>
+          {% if items %}
+            <div class="divide-y">
+              {% for it in items %}
+                <div class="py-3 flex items-center justify-between">
+                  <div>
+                    <div class="font-medium">{{ it.product.name }}</div>
+                    <div class="text-xs text-slate-500">x {{ it.quantity }}</div>
+                  </div>
+                  <div class="font-semibold">{{ it.subtotal }} ₽</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="p-3 text-slate-600">Корзина пуста</div>
+          {% endif %}
+        </div>
+
+        <div class="rounded-xl border bg-white p-4">
+          <h2 class="font-medium mb-3">Оплата (имитация)</h2>
+          <form method="post" action="/checkout/" class="space-y-4">
+            {% csrf_token %}
+            <div>
+              <label class="block text-sm text-slate-600 mb-1">Способ оплаты</label>
+              <div class="flex gap-4 text-sm">
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" name="payment_method" value="card" checked>
+                  <span>Карта</span>
+                </label>
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" name="payment_method" value="wallet">
+                  <span>Кошелёк</span>
+                </label>
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" name="payment_method" value="balance">
+                  <span>Баланс</span>
+                </label>
+              </div>
+              <div id="balance-info" class="hidden mt-2 text-sm px-3 py-2 rounded-md bg-slate-100 text-slate-700">
+                На вашем балансе: <span class="font-semibold">{{ request.user.balance }} ₽</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-600 mb-1">Сценарий результата</label>
+              <select name="scenario" class="w-full rounded-md border px-3 py-2">
+                <option value="success">Успех</option>
+                <option value="fail">Ошибка</option>
+                <option value="pending">Ожидание (webhook)</option>
+              </select>
+            </div>
+
+            <div>
+              <button class="px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Создать заказ и оплатить</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <aside>
+        <div class="rounded-xl border bg-white p-4">
+          <div class="flex items-center justify-between">
+            <div class="text-slate-600">Итого</div>
+            <div class="font-semibold">{{ cart.total }} ₽</div>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">Все платежи — имитация</div>
+        </div>
+      </aside>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function(){
+    function updateBalanceInfo(){
+      const val = document.querySelector('input[name="payment_method"]:checked')?.value;
+      const box = document.getElementById('balance-info');
+      if (!box) return;
+      if (val === 'balance'){ box.classList.remove('hidden'); } else { box.classList.add('hidden'); }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('input[name="payment_method"]').forEach(r => r.addEventListener('change', updateBalanceInfo));
+      updateBalanceInfo();
+    });
+  })();
+</script>
+{% endblock %}

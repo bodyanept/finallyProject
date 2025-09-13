@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.name }} — ZapChasti{% endblock %}
+{% block content %}
+  <nav class="text-sm text-slate-500 mb-4">
+    <a class="hover:underline" href="/">Главная</a>
+    <span class="mx-2">/</span>
+    <a class="hover:underline" href="/catalog/">Каталог</a>
+    <span class="mx-2">/</span>
+    <span class="text-slate-700">{{ product.name }}</span>
+  </nav>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div>
+      <div class="aspect-[4/3] bg-white rounded-xl overflow-hidden border">
+        {% if product.images and product.images.0 %}
+          <img src="{{ product.images.0 }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+        {% else %}
+          <div class="w-full h-full flex items-center justify-center text-slate-400">нет фото</div>
+        {% endif %}
+      </div>
+      {% if product.images and product.images|length > 1 %}
+      <div class="mt-3 grid grid-cols-4 gap-2">
+        {% for img in product.images %}
+          <img src="{{ img }}" alt="{{ product.name }} image {{ forloop.counter }}" class="w-full h-20 object-cover rounded-md border" loading="lazy">
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <h1 class="text-2xl font-semibold leading-tight">{{ product.name }}</h1>
+      <div class="mt-2 text-sm text-slate-500">Артикул: {{ product.sku }}</div>
+
+      <div class="mt-4 flex items-center gap-4">
+        <div class="text-3xl font-bold text-brand-600">{{ product.price }} ₽</div>
+        {% if product.in_stock > 0 %}
+          <span class="text-sm px-2 py-1 rounded-full bg-green-100 text-green-700">в наличии</span>
+        {% else %}
+          <span class="text-sm px-2 py-1 rounded-full bg-slate-100 text-slate-600">нет в наличии</span>
+        {% endif %}
+      </div>
+
+      <div class="mt-6 flex items-center gap-3">
+        <button
+          type="button"
+          hx-post="/api/cart/items/"
+          hx-vals='{"product": {{ product.id }}, "quantity": 1}'
+          hx-trigger="click"
+          hx-on:htmx:afterRequest="refreshCartBadge()"
+          hx-swap="none"
+          class="px-5 py-3 rounded-md bg-brand-600 text-white hover:bg-brand-700"
+        >Добавить в корзину</button>
+        <a href="/catalog/" class="text-sm text-brand-600 hover:underline">Вернуться в каталог</a>
+      </div>
+
+      <div class="mt-8 prose max-w-none">
+        <h2 class="text-lg font-semibold">Описание</h2>
+        <p class="text-slate-700">{{ product.description|default:"Описание скоро будет." }}</p>
+
+        <h3 class="mt-6 font-semibold">Производитель</h3>
+        <p class="text-slate-700">{{ product.manufacturer|default:"—" }}</p>
+
+        {% if product.compatibility %}
+        <h3 class="mt-6 font-semibold">Совместимость</h3>
+        <ul class="list-disc list-inside text-slate-700">
+          {% for c in product.compatibility %}
+            <li>{{ c.make }} {{ c.model }} {{ c.year }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

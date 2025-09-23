@@ -1,18 +1,48 @@
 from __future__ import annotations
 
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .forms import ProfileForm, GarageVehicleForm, AddressForm, TopUpForm
-from .models import GarageVehicle, Address, BalanceTransaction
+from .forms import (
+    ProfileForm,
+    GarageVehicleForm,
+    AddressForm,
+    TopUpForm,
+    RegisterEmailPasswordForm,
+    RegisterProfileForm,
+    LoginForm,
+)
+from .models import GarageVehicle, Address, BalanceTransaction, User
+
+
+def _registration_next_step(user) -> str | None:
+    """Return URL path of the next required registration step or None if complete."""
+    # Step 2: ensure names present
+    if not (user.first_name and user.last_name):
+        return '/register/step2/'
+    # Step 3: ensure address exists and has at least city + line1 + phone
+    addr = getattr(user, 'address', None)
+    if addr is None or not ((addr.city or '').strip() and (addr.line1 or '').strip() and (addr.phone or '').strip()):
+        return '/register/step3/'
+    # Step 4: ensure at least one car in garage
+    if not user.garage.exists():
+        return '/register/step4/'
+    return None
 
 
 @login_required
 def account_home(request):
     user = request.user
 
-    # Ensure address exists for the user
+    # On GET, if registration is incomplete, redirect to next step
+    if request.method == 'GET':
+        next_step = _registration_next_step(user)
+        if next_step:
+            return redirect(next_step)
+
+    # Ensure address exists for the forms section
     addr, _ = Address.objects.get_or_create(user=user)
 
     # Handle POST actions
@@ -47,12 +77,14 @@ def account_home(request):
 
     garage = user.garage.all()
     garage_form = GarageVehicleForm()
+    recent_orders = user.orders.all().order_by('-created_at')[:5]
     context = {
         'form': form,
         'address_form': address_form,
         'topup_form': topup_form,
         'garage': garage,
         'garage_form': garage_form,
+        'recent_orders': recent_orders,
     }
     return render(request, 'accounts/account.html', context)
 
@@ -80,3 +112,123 @@ def garage_delete(request, pk: int):
     obj.delete()
     messages.success(request, 'Автомобиль удалён')
     return redirect('/account/')
+
+
+# ---------------------- Registration (multi-step) ----------------------
+from django.views.decorators.http import require_http_methods  # noqa: E402
+
+
+def register_start(request):
+    return redirect('/register/step1/')
+
+
+def login_choice(request):
+    """Public page offering a choice to log in or register."""
+    if request.user.is_authenticated:
+        return redirect('/account/')
+    return render(request, 'accounts/login_choice.html')
+
+
+@require_http_methods(["GET", "POST"])
+def login_signin(request):
+    """User-facing sign-in form (email + password)."""
+    if request.user.is_authenticated:
+        return redirect('/account/')
+    form = LoginForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        email = form.cleaned_data['email']
+        password = form.cleaned_data['password']
+        user = authenticate(request, username=email, password=password)
+        if user is not None:
+            login(request, user)
+            next_url = request.GET.get('next') or request.POST.get('next') or '/account/'
+            return redirect(next_url)
+        messages.error(request, 'Неверный email или пароль')
+    return render(request, 'accounts/login_signin.html', {'form': form})
+
+
+@require_http_methods(["GET", "POST"])
+def register_step1(request):
+    """Step 1: email + password. Creates user and logs in, then go to step2."""
+    if request.user.is_authenticated:
+        return redirect('/register/step2/')
+    form = RegisterEmailPasswordForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        email = form.cleaned_data['email']
+        password = form.cleaned_data['password']
+        if User.objects.filter(email=email).exists():
+            form.add_error('email', 'Пользователь с таким email уже существует')
+        else:
+            user = User.objects.create_user(email=email, password=password)
+            user.save()
+            # authenticate and login
+            user = authenticate(request, username=email, password=password)
+            if user is not None:
+                login(request, user)
+            return redirect('/register/step2/')
+    return render(request, 'accounts/register_step1.html', {'form': form})
+
+
+@require_http_methods(["GET", "POST"])
+def register_step2(request):
+    """Step 2: first_name, last_name, phone (store phone in session until address)."""
+    if not request.user.is_authenticated:
+        return redirect('/register/step1/')
+    form = RegisterProfileForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        request.user.first_name = form.cleaned_data['first_name']
+        request.user.last_name = form.cleaned_data['last_name']
+        # keep combined name for display
+        request.user.name = f"{request.user.first_name} {request.user.last_name}".strip()
+        request.user.save()
+        # store phone temporarily for next step (address)
+        request.session['register_phone'] = form.cleaned_data['phone']
+        request.session.modified = True
+        return redirect('/register/step3/')
+    return render(request, 'accounts/register_step2.html', {'form': form})
+
+
+@require_http_methods(["GET", "POST"])
+def register_step3(request):
+    """Step 3: address (line1, city, etc). Also set phone from step2."""
+    if not request.user.is_authenticated:
+        return redirect('/register/step1/')
+    addr, _ = Address.objects.get_or_create(user=request.user)
+    form = AddressForm(request.POST or None, instance=addr)
+    if request.method == 'POST' and form.is_valid():
+        address = form.save(commit=False)
+        phone = request.session.get('register_phone')
+        if phone:
+            address.phone = phone
+        address.user = request.user
+        address.save()
+        return redirect('/register/step4/')
+    return render(request, 'accounts/register_step3.html', {'form': form})
+
+
+@require_http_methods(["GET", "POST"])
+def register_step4(request):
+    """Step 4: car make and model (optional other fields). Finish -> account."""
+    if not request.user.is_authenticated:
+        return redirect('/register/step1/')
+    form = GarageVehicleForm(request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            obj: GarageVehicle = form.save(commit=False)
+            obj.user = request.user
+            obj.save()
+            # cleanup temp session data
+            request.session.pop('register_phone', None)
+            return redirect('/account/')
+        # even if invalid, re-render with errors
+        return render(request, 'accounts/register_step4.html', {'form': form})
+    # GET
+    return render(request, 'accounts/register_step4.html', {'form': form})
+
+
+# ---------------------- Logout ----------------------
+@login_required
+def logout_user(request):
+    """Logs out the current user and redirects to home page."""
+    logout(request)
+    return redirect('/')

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random
+from urllib.parse import quote
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import pre_save, post_save
@@ -18,6 +20,24 @@ class Category(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return self.name
+
+# Labels per keyword group (for building a guaranteed-correct placeholder image)
+KEYWORD_LABELS = [
+    (['масляный фильтр', 'фильтр масляный', 'oil filter'], 'Масляный фильтр'),
+    (['воздушный фильтр', 'фильтр воздушный', 'air filter'], 'Воздушный фильтр'),
+    (['салонный фильтр', 'фильтр салона', 'cabin filter'], 'Салонный фильтр'),
+    (['топливный фильтр', 'фильтр топлива', 'fuel filter'], 'Топливный фильтр'),
+    (['тормозные колодки', 'колодки', 'колодка', 'brake pads'], 'Тормозные колодки'),
+    (['тормозной диск', 'диск тормозной', 'тормозные диски', 'brake disc'], 'Тормозной диск'),
+    (['амортизатор', 'стойка амортизатора', 'стойка', 'shock absorber'], 'Амортизатор'),
+    (['аккумулятор', 'акб', 'аккум', 'battery'], 'Аккумулятор'),
+    (['свеча зажигания', 'свечи', 'свечка', 'spark plug'], 'Свеча зажигания'),
+    (['ремень грм', 'ремень', 'грм', 'timing belt'], 'Ремень ГРМ'),
+    (['щетки стеклоочистителя', 'щётки', 'щетка', 'щётка', 'дворники', 'wiper'], 'Щётки стеклоочистителя'),
+    (['моторное масло', 'масло моторное', 'engine oil', 'масло 5w', '5w-30', '5w30', 'масло'], 'Моторное масло'),
+    (['термостат', 'клапан термостата', 'thermostat'], 'Термостат'),
+    (['радиатор', 'радиатор охлаждения', 'радиатор двигателя', 'radiator'], 'Радиатор охлаждения'),
+]
 
 
 class Product(models.Model):
@@ -86,6 +106,141 @@ def set_slug_on_product(sender, instance: Product, **kwargs):
 def set_slug_on_category(sender, instance: Category, **kwargs):
     if not instance.slug:
         instance.slug = slugify(instance.name)
+
+
+# ---------------------- Image auto-pick by product name ----------------------
+# Curated demo images (Unsplash). Feel free to replace with your own static assets.
+KEYWORD_IMAGES = [
+    # Filters
+    ([
+        'масляный фильтр', 'фильтр масляный', 'oil filter',
+    ], [
+        'https://images.unsplash.com/photo-1542362567-b07e54358753?w=800',
+        'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800',
+    ]),
+    ([
+        'воздушный фильтр', 'фильтр воздушный', 'air filter'
+    ], [
+        'https://images.unsplash.com/photo-1617814693417-b874ac4b51ed?w=800',
+        'https://images.unsplash.com/photo-1581609833330-7f32662c7ccb?w=800',
+    ]),
+    ([
+        'салонный фильтр', 'фильтр салона', 'cabin filter'
+    ], [
+        'https://images.unsplash.com/photo-1532635223-7b5d20bbe4b5?w=800',
+    ]),
+    ([
+        'топливный фильтр', 'фильтр топлива', 'fuel filter'
+    ], [
+        'https://images.unsplash.com/photo-1606229365485-83f69ba4aa64?w=800',
+    ]),
+    # Brakes
+    ([
+        'тормозные колодки', 'колодки', 'колодка', 'brake pads'
+    ], [
+        'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800',
+    ]),
+    ([
+        'тормозной диск', 'диск тормозной', 'тормозные диски', 'brake disc'
+    ], [
+        'https://images.unsplash.com/photo-1520975922284-7b14e9a6f208?w=800',
+    ]),
+    # Suspension
+    ([
+        'амортизатор', 'стойка амортизатора', 'стойка', 'shock absorber'
+    ], [
+        'https://images.unsplash.com/photo-1518306727298-4c448be9a99a?w=800',
+    ]),
+    # Electrical
+    ([
+        'аккумулятор', 'акб', 'аккум', 'battery'
+    ], [
+        'https://images.unsplash.com/photo-1599966519407-2ad0ee23d374?w=800',
+        'https://images.unsplash.com/photo-1584622781635-a12763b21c2f?w=800',
+    ]),
+    ([
+        'свеча зажигания', 'свечи', 'свечка', 'spark plug'
+    ], [
+        'https://images.unsplash.com/photo-1628543102646-fc5aa0ee33ea?w=800',
+    ]),
+    ([
+        'стартер', 'стартерный', 'starter'
+    ], [
+        'https://images.unsplash.com/photo-1517554558809-9b4971b38f39?w=800',
+    ]),
+    ([
+        'генератор', 'альтернатор', 'alternator'
+    ], [
+        'https://images.unsplash.com/photo-1518544801976-3e188bc06147?w=800',
+    ]),
+    # Belts/Wipers/Oil
+    ([
+        'ремень грм', 'ремень', 'грм', 'timing belt'
+    ], [
+        'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800',
+    ]),
+    ([
+        'щетки стеклоочистителя', 'щётки', 'щетка', 'щётка', 'дворники', 'wiper'
+    ], [
+        'https://images.unsplash.com/photo-1617137968427-85924c800a4c?w=800',
+    ]),
+    ([
+        'моторное масло', 'масло моторное', 'engine oil', 'масло 5w', '5w-30', '5w30', 'масло'
+    ], [
+        'https://images.unsplash.com/photo-1581091215367-59ab6b514dff?w=800',
+    ]),
+    # Cooling
+    ([
+        'термостат', 'клапан термостата', 'thermostat'
+    ], [
+        'https://images.unsplash.com/photo-1570531492292-4253df3817c5?w=800',
+    ]),
+    ([
+        'радиатор', 'радиатор охлаждения', 'радиатор двигателя', 'radiator'
+    ], [
+        'https://images.unsplash.com/photo-1592853625600-47d63a9dcc01?w=800',
+    ]),
+]
+
+
+def _match_label(name: str) -> str | None:
+    text = (name or '').casefold()
+    for keywords, label in KEYWORD_LABELS:
+        if any(k in text for k in keywords):
+            return label
+    return None
+
+
+def pick_images_for_name(name: str) -> list[str]:
+    text = (name or '').casefold()
+    result: list[str] = []
+    label = _match_label(name)
+    if label:
+        # Build a guaranteed-correct placeholder as the first image
+        placeholder = f"https://via.placeholder.com/800x600.png?text={quote(label)}"
+        result.append(placeholder)
+    for keywords, imgs in KEYWORD_IMAGES:
+        if any(k in text for k in keywords):
+            # return 1-2 curated images for variety
+            if len(imgs) > 1:
+                result.extend(random.sample(imgs, k=min(2, len(imgs))))
+            else:
+                result.extend(imgs)
+            break
+    return result
+
+
+@receiver(pre_save, sender=Product)
+def ensure_images_by_name(sender, instance: Product, **kwargs):
+    """If product has no images, try to guess images by its name."""
+    try:
+        imgs = instance.images or []
+    except Exception:  # JSONField might be None
+        imgs = []
+    if not imgs:
+        guessed = pick_images_for_name(instance.name)
+        if guessed:
+            instance.images = guessed
 
 
 @receiver(pre_save, sender=Product)

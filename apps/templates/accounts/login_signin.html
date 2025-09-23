@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Войти — ZapChasti{% endblock %}
+{% block content %}
+  <div class="max-w-md mx-auto">
+    <h1 class="text-2xl font-semibold mb-6">Вход в аккаунт</h1>
+    <div class="rounded-xl border bg-white p-6">
+      <form method="post" action="/login/signin/" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Email</label>
+          {{ form.email }}
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Пароль</label>
+          {{ form.password }}
+        </div>
+        {% if messages %}
+          <div class="text-sm text-red-600">
+            {% for message in messages %}{{ message }}{% endfor %}
+          </div>
+        {% endif %}
+        <input type="hidden" name="next" value="{{ request.GET.next|default:'/account/' }}" />
+        <div>
+          <button class="px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Войти</button>
+        </div>
+      </form>
+      <div class="mt-4 text-sm">
+        Нет аккаунта? <a class="text-brand-600 hover:underline" href="/register/">Зарегистрироваться</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

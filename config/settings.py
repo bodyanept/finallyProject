@@ -189,5 +189,6 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Auth redirects
-LOGIN_URL = '/admin/login/'
+# Send unauthenticated users to login/register choice page
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/account/'

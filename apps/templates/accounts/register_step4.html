@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация — Шаг 4{% endblock %}
+{% block content %}
+  <h1 class="text-2xl font-semibold mb-6">Регистрация — Шаг 4: Автомобиль</h1>
+  <div class="max-w-lg rounded-xl border bg-white p-6">
+    <form method="post" action="/register/step4/" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">Марка</label>
+        {{ form.make }}
+        {% if form.make.errors %}<div class="text-sm text-red-600">{{ form.make.errors }}</div>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">Модель</label>
+        {{ form.model }}
+        {% if form.model.errors %}<div class="text-sm text-red-600">{{ form.model.errors }}</div>{% endif %}
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Год</label>
+          {{ form.year }}
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">VIN</label>
+          {{ form.vin }}
+        </div>
+      </div>
+      <div class="flex items-center justify-between">
+        <a href="/register/step3/" class="text-sm text-slate-600 hover:underline">Назад</a>
+        <button class="px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Завершить регистрацию</button>
+      </div>
+    </form>
+    <div class="mt-3 text-xs text-slate-500">Марку и модель укажите обязательно. VIN — по желанию.</div>
+  </div>
+{% endblock %}

@@ -5,6 +5,7 @@ from typing import Tuple
 
 from rest_framework import status, views
 from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
 from django.shortcuts import get_object_or_404
 
 from apps.catalog.models import Product
@@ -36,6 +37,7 @@ def ensure_cart(request) -> Tuple[Cart, bool]:
 
 
 class CartRetrieveView(views.APIView):
+    renderer_classes = [JSONRenderer]
     def get(self, request):
         cart, _ = ensure_cart(request)
         data = CartSerializer(cart).data
@@ -43,6 +45,7 @@ class CartRetrieveView(views.APIView):
 
 
 class CartItemAddView(views.APIView):
+    renderer_classes = [JSONRenderer]
     def post(self, request):
         cart, _ = ensure_cart(request)
         product_id = request.data.get("product")
@@ -59,11 +62,16 @@ class CartItemAddView(views.APIView):
         if created:
             item.price_at_add = product.price
         item.save()
-
+        # If HTMX request, return 204 without body to avoid injecting JSON into DOM
+        if request.META.get('HTTP_HX_REQUEST') == 'true':
+            resp = Response(status=status.HTTP_204_NO_CONTENT)
+            resp['HX-Trigger'] = 'cart-changed'
+            return resp
         return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
 
 
 class CartItemUpdateView(views.APIView):
+    renderer_classes = [JSONRenderer]
     def patch(self, request, item_id: int):
         cart, _ = ensure_cart(request)
         item = get_object_or_404(CartItem, id=item_id, cart=cart)
@@ -72,12 +80,20 @@ class CartItemUpdateView(views.APIView):
             quantity = 1
         item.quantity = quantity
         item.save()
+        if request.META.get('HTTP_HX_REQUEST') == 'true':
+            resp = Response(status=status.HTTP_204_NO_CONTENT)
+            resp['HX-Trigger'] = 'cart-changed'
+            return resp
         return Response(CartSerializer(cart).data)
 
     def delete(self, request, item_id: int):
         cart, _ = ensure_cart(request)
         item = get_object_or_404(CartItem, id=item_id, cart=cart)
         item.delete()
+        if request.META.get('HTTP_HX_REQUEST') == 'true':
+            resp = Response(status=status.HTTP_204_NO_CONTENT)
+            resp['HX-Trigger'] = 'cart-changed'
+            return resp
         return Response(CartSerializer(cart).data)
 
 
@@ -119,6 +135,31 @@ def site_cart_remove_item(request, item_id: int):
     cart, _ = ensure_cart(request)
     item = get_object_or_404(CartItem, id=item_id, cart=cart)
     item.delete()
+    return redirect('/cart/')
+
+
+@require_POST
+def site_cart_remove_selected(request):
+    """Remove multiple selected items from the current cart.
+    Expects POST with repeated field 'items' containing CartItem ids.
+    """
+    cart, _ = ensure_cart(request)
+    ids = request.POST.getlist('items')
+    if not ids and request.content_type == 'application/json':
+        try:
+            import json
+            data = json.loads(request.body.decode('utf-8') or '{}')
+            if isinstance(data, dict):
+                ids = data.get('items') or []
+            elif isinstance(data, list):
+                ids = data
+        except Exception:
+            ids = []
+    if ids:
+        CartItem.objects.filter(cart=cart, id__in=ids).delete()
+    # HTMX/JS: respond 204 to stay on page
+    if request.META.get('HTTP_HX_REQUEST') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return Response(status=status.HTTP_204_NO_CONTENT)
     return redirect('/cart/')
 
 

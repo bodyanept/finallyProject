@@ -87,7 +87,7 @@
         </div>
 
         <div class="rounded-xl border bg-white p-4">
-          <h2 class="font-medium mb-3">Оплата (имитация)</h2>
+          <h2 class="font-medium mb-3">Оплата</h2>
           <form method="post" action="/checkout/" class="space-y-4">
             {% csrf_token %}
             <div>
@@ -111,13 +111,32 @@
               </div>
             </div>
 
-            <div>
-              <label class="block text-sm text-slate-600 mb-1">Сценарий результата</label>
-              <select name="scenario" class="w-full rounded-md border px-3 py-2">
-                <option value="success">Успех</option>
-                <option value="fail">Ошибка</option>
-                <option value="pending">Ожидание (webhook)</option>
-              </select>
+            <div id="card-fields" class="space-y-3 hidden">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label class="block">
+                  <span class="block text-sm text-slate-600 mb-1">Номер карты</span>
+                  <input name="card_number" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000"
+                         class="w-full rounded-md border px-3 py-2" maxlength="19">
+                </label>
+                <label class="block">
+                  <span class="block text-sm text-slate-600 mb-1">Владелец (латиница)</span>
+                  <input name="card_holder" autocomplete="cc-name" placeholder="IVAN IVANOV"
+                         class="w-full rounded-md border px-3 py-2" maxlength="32">
+                </label>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <label class="block">
+                  <span class="block text-sm text-slate-600 mb-1">Срок (MM/YY)</span>
+                  <input name="card_exp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY"
+                         class="w-full rounded-md border px-3 py-2" maxlength="5">
+                </label>
+                <label class="block">
+                  <span class="block text-sm text-slate-600 mb-1">CVC</span>
+                  <input name="card_cvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC"
+                         class="w-full rounded-md border px-3 py-2" maxlength="4">
+                </label>
+              </div>
+              <div class="text-xs text-slate-500">Данные карты используются только для демонстрации и никуда не отправляются.</div>
             </div>
 
             <div>
@@ -143,15 +162,20 @@
 {% block extra_js %}
 <script>
   (function(){
-    function updateBalanceInfo(){
+    function updatePaymentUI(){
       const val = document.querySelector('input[name="payment_method"]:checked')?.value;
-      const box = document.getElementById('balance-info');
-      if (!box) return;
-      if (val === 'balance'){ box.classList.remove('hidden'); } else { box.classList.add('hidden'); }
+      const balanceBox = document.getElementById('balance-info');
+      const cardBox = document.getElementById('card-fields');
+      if (balanceBox){
+        if (val === 'balance'){ balanceBox.classList.remove('hidden'); } else { balanceBox.classList.add('hidden'); }
+      }
+      if (cardBox){
+        if (val === 'card'){ cardBox.classList.remove('hidden'); } else { cardBox.classList.add('hidden'); }
+      }
     }
     document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('input[name="payment_method"]').forEach(r => r.addEventListener('change', updateBalanceInfo));
-      updateBalanceInfo();
+      document.querySelectorAll('input[name="payment_method"]').forEach(r => r.addEventListener('change', updatePaymentUI));
+      updatePaymentUI();
     });
   })();
 </script>

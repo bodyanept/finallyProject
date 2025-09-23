@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация — Шаг 2{% endblock %}
+{% block content %}
+  <h1 class="text-2xl font-semibold mb-6">Регистрация — Шаг 2: Имя, фамилия, телефон</h1>
+  <div class="max-w-lg rounded-xl border bg-white p-6">
+    <form method="post" action="/register/step2/" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">Имя</label>
+        {{ form.first_name }}
+        {% if form.first_name.errors %}<div class="text-sm text-red-600">{{ form.first_name.errors }}</div>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">Фамилия</label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}<div class="text-sm text-red-600">{{ form.last_name.errors }}</div>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">Телефон</label>
+        {{ form.phone }}
+        {% if form.phone.errors %}<div class="text-sm text-red-600">{{ form.phone.errors }}</div>{% endif %}
+      </div>
+      <div class="flex items-center justify-between">
+        <a href="/register/step1/" class="text-sm text-slate-600 hover:underline">Назад</a>
+        <button class="px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Продолжить</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

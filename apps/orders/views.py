@@ -93,9 +93,8 @@ def site_checkout(request):
         context.update({'items': items, 'cart': cart, 'address': addr})
         return render(request, 'orders/checkout.html', context)
 
-    # POST: create order and simulate payment
+    # POST: create order and process payment
     payment_method = request.POST.get('payment_method', 'card')
-    scenario = request.POST.get('scenario', 'success')
 
     if not items:
         return redirect('/cart/')
@@ -126,22 +125,38 @@ def site_checkout(request):
             deficit = (order.total - request.user.balance)
             context.update({'order': order, 'result': 'failed', 'need_topup': True, 'topup_deficit': deficit})
             return render(request, 'orders/checkout.html', context)
-
-    # Other methods go through mock
-    payment = PaymentMock.objects.create(order=order, scenario=scenario, status='created')
-    if scenario == 'success':
-        payment.status = 'succeeded'
+    # Card payments: collect card fields and approve immediately (demo)
+    if payment_method == 'card':
+        # In demo, we approve immediately without external gateway
         order.status = 'paid'
+        order.save()
         # Clear cart only on success
         cart.items.all().delete()
-    elif scenario == 'fail':
-        payment.status = 'failed'
-        order.status = 'failed'
-    else:
-        payment.status = 'processing'
-        # In dev, allow finishing via webhook API; here we just show pending
-    order.save()
-    payment.save()
+        context.update({'order': order, 'result': 'succeeded'})
+        return render(request, 'orders/checkout.html', context)
 
-    context.update({'order': order, 'payment': payment, 'result': payment.status})
+    # Fallback for other methods (if any): mark as processing
+    order.status = 'processing'
+    order.save()
+
+    context.update({'order': order, 'result': 'processing'})
     return render(request, 'orders/checkout.html', context)
+
+
+# ---------------------- Site (HTML) orders list/detail ----------------------
+from django.contrib.auth.decorators import login_required  # noqa: E402
+
+
+@login_required
+def site_orders_list(request):
+    """List current user's orders with statuses."""
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'orders/orders_list.html', {'orders': orders})
+
+
+@login_required
+def site_order_detail(request, pk: int):
+    """Show a single order if it belongs to current user."""
+    order = get_object_or_404(Order, pk=pk, user=request.user)
+    items = order.items.select_related('product').all()
+    return render(request, 'orders/order_detail.html', {'order': order, 'items': items})

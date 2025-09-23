@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация — Шаг 3{% endblock %}
+{% block content %}
+  <h1 class="text-2xl font-semibold mb-6">Регистрация — Шаг 3: Адрес</h1>
+  <div class="max-w-xl rounded-xl border bg-white p-6">
+    <form method="post" action="/register/step3/" class="space-y-4">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Город</label>
+          {{ form.city }}
+          {% if form.city.errors %}<div class="text-sm text-red-600">{{ form.city.errors }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Адрес</label>
+          {{ form.line1 }}
+          {% if form.line1.errors %}<div class="text-sm text-red-600">{{ form.line1.errors }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Кв/офис</label>
+          {{ form.line2 }}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Регион</label>
+            {{ form.region }}
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Индекс</label>
+            {{ form.postal_code }}
+          </div>
+        </div>
+        <div class="text-xs text-slate-500">Телефон указывался на шаге 2 и будет сохранён вместе с адресом автоматически.</div>
+      </div>
+      <div class="flex items-center justify-between">
+        <a href="/register/step2/" class="text-sm text-slate-600 hover:underline">Назад</a>
+        <button class="px-4 py-2 rounded-md bg-brand-600 text-white hover:bg-brand-700">Продолжить</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

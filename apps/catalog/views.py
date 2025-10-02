@@ -170,9 +170,11 @@ def site_catalog(request):
             pass
 
     categories = Category.objects.all()
+    total_count = qs.count()
     context = {
-        "products": qs[:60],  # simple limit for now
+        "products": qs,  # show all products
         "categories": categories,
+        "total_count": total_count,
     }
     return render(request, "catalog/list.html", context)
 

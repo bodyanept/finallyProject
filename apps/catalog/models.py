@@ -237,10 +237,17 @@ def ensure_images_by_name(sender, instance: Product, **kwargs):
         imgs = instance.images or []
     except Exception:  # JSONField might be None
         imgs = []
+    # Normalize: keep only non-empty strings
+    imgs = [s.strip() for s in imgs if isinstance(s, str) and s.strip()]
     if not imgs:
         guessed = pick_images_for_name(instance.name)
         if guessed:
             instance.images = guessed
+        else:
+            instance.images = []
+    else:
+        # Save back cleaned images so we don't keep blanks
+        instance.images = imgs
 
 
 @receiver(pre_save, sender=Product)

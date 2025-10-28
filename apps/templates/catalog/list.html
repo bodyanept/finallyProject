@@ -18,7 +18,8 @@
       <div class="group rounded-xl overflow-hidden border bg-white hover:shadow md:hover:-translate-y-0.5 transition">
         <a href="/parts/{{ p.slug }}/" class="block aspect-[4/3] bg-slate-100 relative">
           {% if p.images and p.images.0 %}
-            <img src="{{ p.images.0 }}" alt="{{ p.name }}" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
+            <img src="{{ p.images.0 }}" alt="{{ p.name }}" class="absolute inset-0 w-full h-full object-cover" loading="lazy"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/800x600.png?text={{ p.name|urlencode }}';">
           {% else %}
             <div class="absolute inset-0 flex items-center justify-center text-slate-400">нет фото</div>
           {% endif %}

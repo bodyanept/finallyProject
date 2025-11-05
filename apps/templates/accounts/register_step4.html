@@ -5,6 +5,9 @@
   <div class="max-w-lg rounded-xl border bg-white p-6">
     <form method="post" action="/register/step4/" class="space-y-4">
       {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="text-sm text-red-600">{{ form.non_field_errors }}</div>
+      {% endif %}
       <div>
         <label class="block text-sm text-slate-600 mb-1">Марка</label>
         {{ form.make }}
@@ -19,10 +22,12 @@
         <div>
           <label class="block text-sm text-slate-600 mb-1">Год</label>
           {{ form.year }}
+          {% if form.year.errors %}<div class="text-sm text-red-600">{{ form.year.errors }}</div>{% endif %}
         </div>
         <div>
           <label class="block text-sm text-slate-600 mb-1">VIN</label>
           {{ form.vin }}
+          {% if form.vin.errors %}<div class="text-sm text-red-600">{{ form.vin.errors }}</div>{% endif %}
         </div>
       </div>
       <div class="flex items-center justify-between">

@@ -57,14 +57,22 @@ class LoginForm(forms.Form):
 class AddressForm(forms.ModelForm):
     class Meta:
         model = Address
-        fields = ["line1", "line2", "city", "region", "postal_code"]
+        fields = ["line1", "line2", "city", "region", "postal_code", "phone"]
         widgets = {
             "line1": forms.TextInput(attrs={"class": "w-full rounded-md border px-3 py-2"}),
             "line2": forms.TextInput(attrs={"class": "w-full rounded-md border px-3 py-2"}),
             "city": forms.TextInput(attrs={"class": "w-full rounded-md border px-3 py-2"}),
             "region": forms.TextInput(attrs={"class": "w-full rounded-md border px-3 py-2"}),
             "postal_code": forms.TextInput(attrs={"class": "w-full rounded-md border px-3 py-2"}),
+            "phone": forms.TextInput(attrs={"class": "w-full rounded-md border px-3 py-2"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Require essential fields to align with registration completion checks
+        self.fields["city"].required = True
+        self.fields["line1"].required = True
+        self.fields["phone"].required = True
 
 
 class GarageVehicleForm(forms.ModelForm):

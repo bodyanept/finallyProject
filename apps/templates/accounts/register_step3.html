@@ -30,7 +30,12 @@
             {{ form.postal_code }}
           </div>
         </div>
-        <div class="text-xs text-slate-500">Телефон указывался на шаге 2 и будет сохранён вместе с адресом автоматически.</div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Телефон</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div class="text-sm text-red-600">{{ form.phone.errors }}</div>{% endif %}
+        </div>
+        <div class="text-xs text-slate-500">Телефон был указан на шаге 2 и подставлен автоматически — при необходимости поправьте.</div>
       </div>
       <div class="flex items-center justify-between">
         <a href="/register/step2/" class="text-sm text-slate-600 hover:underline">Назад</a>

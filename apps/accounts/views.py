@@ -194,15 +194,23 @@ def register_step3(request):
     if not request.user.is_authenticated:
         return redirect('/register/step1/')
     addr, _ = Address.objects.get_or_create(user=request.user)
-    form = AddressForm(request.POST or None, instance=addr)
-    if request.method == 'POST' and form.is_valid():
-        address = form.save(commit=False)
-        phone = request.session.get('register_phone')
-        if phone:
-            address.phone = phone
-        address.user = request.user
-        address.save()
-        return redirect('/register/step4/')
+    if request.method == 'POST':
+        form = AddressForm(request.POST, instance=addr)
+        if form.is_valid():
+            address = form.save(commit=False)
+            if not getattr(address, 'phone', '').strip():
+                session_phone = request.session.get('register_phone')
+                if session_phone:
+                    address.phone = session_phone
+            address.user = request.user
+            address.save()
+            return redirect('/register/step4/')
+    else:
+        initial = {}
+        session_phone = request.session.get('register_phone')
+        if session_phone and not getattr(addr, 'phone', '').strip():
+            initial['phone'] = session_phone
+        form = AddressForm(instance=addr, initial=initial)
     return render(request, 'accounts/register_step3.html', {'form': form})
 
 

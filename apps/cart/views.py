@@ -113,6 +113,7 @@ def site_cart(request):
 
 from django.views.decorators.http import require_POST
 from django.shortcuts import redirect
+from django.http import HttpResponse
 
 
 @require_POST
@@ -157,9 +158,9 @@ def site_cart_remove_selected(request):
             ids = []
     if ids:
         CartItem.objects.filter(cart=cart, id__in=ids).delete()
-    # HTMX/JS: respond 204 to stay on page
+    # HTMX/JS: respond 204 to stay on page (use Django response in site view)
     if request.META.get('HTTP_HX_REQUEST') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return HttpResponse(status=204)
     return redirect('/cart/')
 
 

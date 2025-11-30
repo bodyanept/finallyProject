@@ -2,7 +2,7 @@ from rest_framework import generics
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 from django.db.models.functions import Lower
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.db import connection
 
 from .models import Product, Category

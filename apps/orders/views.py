@@ -69,6 +69,7 @@ class CheckoutAPIView(views.APIView):
 
 # ---------------------- Site (HTML) checkout ----------------------
 from django.shortcuts import render, redirect  # noqa: E402
+from django.conf import settings  # noqa: E402
 from django.views.decorators.http import require_http_methods  # noqa: E402
 
 
@@ -125,6 +126,18 @@ def site_checkout(request):
             deficit = (order.total - request.user.balance)
             context.update({'order': order, 'result': 'failed', 'need_topup': True, 'topup_deficit': deficit})
             return render(request, 'orders/checkout.html', context)
+    # Real provider redirect (YooKassa) when enabled
+    if getattr(settings, 'USE_REAL_PAYMENTS', False) and getattr(settings, 'PAYMENTS_PROVIDER', 'mock') == 'yookassa' and payment_method in ('card', 'sbp'):
+        try:
+            from apps.payments.provider import create_yookassa_payment
+            return_url = f"{getattr(settings, 'SITE_BASE_URL', 'http://localhost:8000')}/account/"
+            confirmation_url = create_yookassa_payment(order, payment_method, return_url)
+            # Do not clear cart; finalize via webhook
+            return redirect(confirmation_url)
+        except Exception:
+            # Fallback to demo behavior if provider call fails
+            pass
+
     # Card payments: collect card fields and approve immediately (demo)
     if payment_method == 'card':
         # In demo, we approve immediately without external gateway

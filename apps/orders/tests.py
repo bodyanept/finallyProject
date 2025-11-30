@@ -7,6 +7,8 @@ from apps.catalog.models import Category, Product
 from apps.orders.models import Order, OrderItem
 from apps.cart.models import Cart, CartItem
 from decimal import Decimal
+from unittest.mock import patch
+from django.test import override_settings
 from apps.orders.serializers import OrderSerializer
 
 
@@ -124,6 +126,17 @@ class OrdersTests(TestCase):
         self.assertEqual(order.items.count(), 1)
         self.assertEqual(order.items.first().quantity, 3)
         self.assertEqual(Cart.objects.get(user=self.user).items.count(), 0)
+
+    @override_settings(USE_REAL_PAYMENTS=True, PAYMENTS_PROVIDER='yookassa', SITE_BASE_URL='http://testserver')
+    def test_site_checkout_redirects_to_yookassa_when_enabled(self):
+        # login and prepare cart
+        self.client.login(email=self.user.email, password='pass123')
+        self._prepare_cart(self.user)
+        with patch('apps.payments.provider.create_yookassa_payment', return_value='https://kassa.example/confirm/abc'):
+            resp = self.client.post('/checkout/', {'payment_method': 'card'})
+            # Should redirect to provider confirmation URL
+            self.assertIn(resp.status_code, (302, 301))
+            self.assertIn('https://kassa.example/confirm/abc', resp['Location'])
 
     def test_site_orders_pages_require_auth_and_show_own(self):
         # Create orders

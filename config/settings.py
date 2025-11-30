@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'apps.catalog',
     'apps.cart',
     'apps.orders',
+    'apps.payments',
     'apps.payments_mock',
     'apps.adminpanel',
     'apps.core',
@@ -192,3 +193,14 @@ SPECTACULAR_SETTINGS = {
 # Send unauthenticated users to login/register choice page
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/account/'
+
+# Payments integration toggles
+USE_REAL_PAYMENTS = env.bool('USE_REAL_PAYMENTS', default=False)
+PAYMENTS_PROVIDER = env.str('PAYMENTS_PROVIDER', default='mock')  # 'yookassa' or 'tinkoff'
+SITE_BASE_URL = env.str('SITE_BASE_URL', default='http://localhost:8000')
+
+# Provider keys (read if set)
+YOOKASSA_SHOP_ID = env.str('YOOKASSA_SHOP_ID', default='')
+YOOKASSA_SECRET_KEY = env.str('YOOKASSA_SECRET_KEY', default='')
+TINKOFF_TERMINAL_KEY = env.str('TINKOFF_TERMINAL_KEY', default='')
+TINKOFF_PASSWORD = env.str('TINKOFF_PASSWORD', default='')

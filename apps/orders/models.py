@@ -10,10 +10,10 @@ from apps.catalog.models import Product
 
 class Order(models.Model):
     STATUS_CHOICES = (
-        ("created", "Created"),
-        ("paid", "Paid"),
-        ("failed", "Failed"),
-        ("canceled", "Canceled"),
+        ("created", "Создан"),
+        ("paid", "Оплачен"),
+        ("failed", "Ошибка оплаты"),
+        ("canceled", "Отменён"),
     )
     FULFILLMENT_CHOICES = (
         ("placed", "Оформлен"),
@@ -22,22 +22,24 @@ class Order(models.Model):
         ("ready", "Доставлен в пункт выдачи"),
     )
     PAYMENT_METHOD_CHOICES = (
-        ("wallet", "Wallet"),
-        ("card", "Card"),
-        ("balance", "Balance"),
+        ("wallet", "Кошелёк"),
+        ("card", "Карта"),
+        ("balance", "Баланс"),
     )
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders")
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="created")
-    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES)
-    fulfillment_status = models.CharField(max_length=12, choices=FULFILLMENT_CHOICES, default="placed")
-    tracking_number = models.CharField(max_length=32, blank=True, default="")
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="Пользователь", on_delete=models.CASCADE, related_name="orders")
+    total = models.DecimalField("Сумма заказа", max_digits=12, decimal_places=2, default=0)
+    status = models.CharField("Статус оплаты", max_length=10, choices=STATUS_CHOICES, default="created")
+    payment_method = models.CharField("Способ оплаты", max_length=10, choices=PAYMENT_METHOD_CHOICES)
+    fulfillment_status = models.CharField("Статус доставки", max_length=12, choices=FULFILLMENT_CHOICES, default="placed")
+    tracking_number = models.CharField("Трек-номер", max_length=32, blank=True, default="")
+    created_at = models.DateTimeField("Дата создания", default=timezone.now)
+    updated_at = models.DateTimeField("Дата обновления", auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
+        verbose_name = "Заказ"
+        verbose_name_plural = "Заказы"
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return f"Order #{self.pk} — {self.user.email} — {self.status}"
@@ -56,10 +58,14 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField(default=1)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    order = models.ForeignKey(Order, verbose_name="Заказ", on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, verbose_name="Товар", on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField("Количество", default=1)
+    unit_price = models.DecimalField("Цена за единицу", max_digits=12, decimal_places=2)
+
+    class Meta:
+        verbose_name = "Позиция заказа"
+        verbose_name_plural = "Позиции заказа"
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return f"{self.product} x {self.quantity}"

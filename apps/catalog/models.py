@@ -11,12 +11,14 @@ from django.utils import timezone
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=120)
-    slug = models.SlugField(max_length=140, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    name = models.CharField("Название", max_length=120)
+    slug = models.SlugField("Слаг", max_length=140, unique=True)
+    created_at = models.DateTimeField("Дата создания", auto_now_add=True)
 
     class Meta:
         ordering = ["name"]
+        verbose_name = "Категория"
+        verbose_name_plural = "Категории"
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return self.name
@@ -41,55 +43,71 @@ KEYWORD_LABELS = [
 
 
 class Product(models.Model):
-    name = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=220, unique=True)
-    sku = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True)
-    manufacturer = models.CharField(max_length=120, blank=True)
-    price = models.DecimalField(max_digits=12, decimal_places=2)
-    in_stock = models.PositiveIntegerField(default=0)
-    images = models.JSONField(default=list, blank=True)
-    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="products")
-    compatibility = models.JSONField(default=list, blank=True, help_text="Список объектов {make, model, year}")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name = models.CharField("Название", max_length=200)
+    slug = models.SlugField("Слаг", max_length=220, unique=True)
+    sku = models.CharField("Артикул", max_length=100, unique=True)
+    description = models.TextField("Описание", blank=True)
+    manufacturer = models.CharField("Производитель", max_length=120, blank=True)
+    price = models.DecimalField("Цена", max_digits=12, decimal_places=2)
+    in_stock = models.PositiveIntegerField("Остаток на складе", default=0)
+    images = models.JSONField("Изображения", default=list, blank=True)
+    category = models.ForeignKey(Category, verbose_name="Категория", on_delete=models.PROTECT, related_name="products")
+    compatibility = models.JSONField("Совместимость", default=list, blank=True, help_text="Список объектов {make, model, year}")
+    created_at = models.DateTimeField("Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField("Дата обновления", auto_now=True)
 
     class Meta:
         ordering = ["name"]
+        verbose_name = "Товар"
+        verbose_name_plural = "Товары"
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return f"{self.name} ({self.sku})"
 
 
 class PriceHistory(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="price_history")
-    old_price = models.DecimalField(max_digits=12, decimal_places=2)
-    new_price = models.DecimalField(max_digits=12, decimal_places=2)
-    reason = models.CharField(max_length=255, blank=True)
+    product = models.ForeignKey(Product, verbose_name="Товар", on_delete=models.CASCADE, related_name="price_history")
+    old_price = models.DecimalField("Старая цена", max_digits=12, decimal_places=2)
+    new_price = models.DecimalField("Новая цена", max_digits=12, decimal_places=2)
+    reason = models.CharField("Причина", max_length=255, blank=True)
     changed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="price_changes"
+        settings.AUTH_USER_MODEL,
+        verbose_name="Кем изменено",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="price_changes",
     )
-    changed_at = models.DateTimeField(default=timezone.now)
+    changed_at = models.DateTimeField("Дата изменения", default=timezone.now)
 
     class Meta:
         ordering = ["-changed_at"]
+        verbose_name = "История цены"
+        verbose_name_plural = "История цен"
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return f"{self.product} {self.old_price} -> {self.new_price}"
 
 
 class ProductChangeLog(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="change_logs")
-    field = models.CharField(max_length=120)
-    old_value = models.TextField(blank=True)
-    new_value = models.TextField(blank=True)
+    product = models.ForeignKey(Product, verbose_name="Товар", on_delete=models.CASCADE, related_name="change_logs")
+    field = models.CharField("Поле", max_length=120)
+    old_value = models.TextField("Старое значение", blank=True)
+    new_value = models.TextField("Новое значение", blank=True)
     changed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="product_changes"
+        settings.AUTH_USER_MODEL,
+        verbose_name="Кем изменено",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="product_changes",
     )
-    changed_at = models.DateTimeField(default=timezone.now)
+    changed_at = models.DateTimeField("Дата изменения", default=timezone.now)
 
     class Meta:
         ordering = ["-changed_at"]
+        verbose_name = "Изменение товара"
+        verbose_name_plural = "Изменения товара"
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         return f"{self.product} | {self.field}: {self.old_value} -> {self.new_value}"

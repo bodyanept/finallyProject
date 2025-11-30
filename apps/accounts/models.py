@@ -38,41 +38,59 @@ class User(AbstractUser):
     """Custom user using email as username."""
 
     username = None  # remove username field from AbstractUser
-    email = models.EmailField("email address", unique=True)
-    name = models.CharField(max_length=150, blank=True)
+    email = models.EmailField("Адрес электронной почты", unique=True)
+    name = models.CharField("Имя", max_length=150, blank=True)
     role = models.CharField(
+        "Роль",
         max_length=10,
         choices=(
-            ("user", "User"),
-            ("admin", "Admin"),
+            ("user", "Пользователь"),
+            ("admin", "Администратор"),
         ),
         default="user",
     )
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    balance = models.DecimalField("Баланс", max_digits=12, decimal_places=2, default=0)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     objects = UserManager()
-
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
     def __str__(self) -> str:  # pragma: no cover - trivial
         return self.email
 
 
 class BalanceTransaction(models.Model):
     TYPE_CHOICES = (
-        ("debit", "Debit"),
-        ("credit", "Credit"),
+        ("debit", "Списание"),
+        ("credit", "Зачисление"),
     )
 
-    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='balance_transactions')
-    order = models.ForeignKey('orders.Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='balance_transactions')
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
-    created_at = models.DateTimeField(default=timezone.now)
+    user = models.ForeignKey(
+        'accounts.User',
+        verbose_name='Пользователь',
+        on_delete=models.CASCADE,
+        related_name='balance_transactions',
+    )
+    order = models.ForeignKey(
+        'orders.Order',
+        verbose_name='Заказ',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='balance_transactions',
+    )
+    amount = models.DecimalField("Сумма", max_digits=12, decimal_places=2)
+    type = models.CharField("Тип", max_length=10, choices=TYPE_CHOICES)
+    created_at = models.DateTimeField("Дата создания", default=timezone.now)
 
     class Meta:
         ordering = ['-created_at']
+        verbose_name = "Операция по балансу"
+        verbose_name_plural = "Операции по балансу"
+
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         sign = '-' if self.type == 'debit' else '+'
@@ -80,15 +98,17 @@ class BalanceTransaction(models.Model):
 
 
 class GarageVehicle(models.Model):
-    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='garage')
-    make = models.CharField(max_length=60)
-    model = models.CharField(max_length=60)
-    year = models.PositiveIntegerField(null=True, blank=True)
-    vin = models.CharField(max_length=32, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    user = models.ForeignKey('accounts.User', verbose_name='Пользователь', on_delete=models.CASCADE, related_name='garage')
+    make = models.CharField("Марка", max_length=60)
+    model = models.CharField("Модель", max_length=60)
+    year = models.PositiveIntegerField("Год", null=True, blank=True)
+    vin = models.CharField("VIN", max_length=32, blank=True)
+    created_at = models.DateTimeField("Дата добавления", default=timezone.now)
 
     class Meta:
         ordering = ['-created_at']
+        verbose_name = "Автомобиль"
+        verbose_name_plural = "Автомобили"
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         y = f" {self.year}" if self.year else ""
@@ -96,15 +116,15 @@ class GarageVehicle(models.Model):
 
 
 class Address(models.Model):
-    user = models.OneToOneField('accounts.User', on_delete=models.CASCADE, related_name='address')
+    user = models.OneToOneField('accounts.User', verbose_name='Пользователь', on_delete=models.CASCADE, related_name='address')
     line1 = models.CharField("Адрес", max_length=255, blank=True)
     line2 = models.CharField("Квартира/офис", max_length=255, blank=True)
     city = models.CharField("Город", max_length=120, blank=True)
     region = models.CharField("Регион", max_length=120, blank=True)
     postal_code = models.CharField("Индекс", max_length=20, blank=True)
     phone = models.CharField("Телефон", max_length=32, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField("Дата создания", default=timezone.now)
+    updated_at = models.DateTimeField("Дата обновления", auto_now=True)
 
     class Meta:
         verbose_name = "Адрес"

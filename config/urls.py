@@ -37,3 +37,8 @@ urlpatterns = [
     path('api/', include('apps.payments.urls')),
     path('api/', include('apps.payments_mock.urls')),
 ]
+
+# Russian titles for Django admin
+admin.site.site_header = "Панель администратора"
+admin.site.site_title = "Админка проекта"
+admin.site.index_title = "Управление системой"
